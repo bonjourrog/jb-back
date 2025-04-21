@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"os"
 
 	"github.com/bonjourrog/jb/db"
@@ -15,7 +14,7 @@ type authrepo struct{}
 
 type AuthRepo interface {
 	Create(user entity.User) (*mongo.InsertOneResult, error)
-	FindByEmail(email string) error
+	FindByEmail(email string) (*entity.User, error)
 }
 
 func NewAuthRepository() AuthRepo {
@@ -43,10 +42,10 @@ func (*authrepo) Create(user entity.User) (*mongo.InsertOneResult, error) {
 }
 
 // FindByEmail checks if the email exists in the database
-func (*authrepo) FindByEmail(email string) error {
+func (*authrepo) FindByEmail(email string) (*entity.User, error) {
 	var (
-		_db   = db.NewMongoConnection()
-		_user entity.User
+		_db  = db.NewMongoConnection()
+		user entity.User
 	)
 	client := _db.Connection()
 	defer func() {
@@ -55,12 +54,12 @@ func (*authrepo) FindByEmail(email string) error {
 		}
 	}()
 	coll := client.Database(os.Getenv("DATABASE")).Collection("users")
-	err := coll.FindOne(context.TODO(), bson.M{"account.email": email}).Decode(&_user)
-	if err == nil {
-		return errors.New("email already exist")
+	err := coll.FindOne(context.TODO(), bson.M{"account.email": email}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
 	}
-	if err != mongo.ErrNoDocuments {
-		return err
-	}
-	return nil
+	return &user, nil
 }

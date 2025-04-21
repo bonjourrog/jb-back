@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/bonjourrog/jb/entity"
 	"github.com/bonjourrog/jb/repository/auth"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -22,8 +24,13 @@ func NewAuthService(authRepository auth.AuthRepo) AuthService {
 }
 
 func (*authService) Signup(user entity.User) (*mongo.InsertOneResult, error) {
-	if err := _authRepository.FindByEmail(user.Account.Email); err != nil {
+
+	userFound, err := _authRepository.FindByEmail(user.Account.Email)
+	if err != nil {
 		return nil, err
+	}
+	if userFound != nil {
+		return nil, errors.New("email already exists")
 	}
 	return _authRepository.Create(user)
 }
