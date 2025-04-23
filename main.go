@@ -25,5 +25,6 @@ func main() {
 		log.Println("Error loading env file")
 	}
 	httpRouter.POST("/api/auth/signup", authController.Signup)
+	httpRouter.POST("/api/auth/signin", authController.Signin)
 	httpRouter.Serve(os.Getenv("PORT"))
 }
