@@ -10,6 +10,7 @@ import (
 	"github.com/bonjourrog/jb/repository/auth"
 	"github.com/bonjourrog/jb/util"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -30,14 +31,45 @@ func NewAuthService(authRepository auth.AuthRepo) AuthService {
 }
 
 func (*authService) Signup(user entity.User) (*mongo.InsertOneResult, error) {
+	//Remove leading and trailing spaces from some fields in case they have them
+	user.Account.Email = strings.TrimSpace(strings.ToLower(user.Account.Email))
+	user.Name = strings.TrimSpace(strings.ToLower(user.Name))
+	user.LastName = strings.TrimSpace(strings.ToLower(user.LastName))
+	user.Company.Address.FirstStreet = strings.TrimSpace(strings.ToLower(user.Company.Address.FirstStreet))
+	user.Company.Address.SecondStreet = strings.TrimSpace(strings.ToLower(user.Company.Address.SecondStreet))
+	user.Company.Address.Neighborhood = strings.TrimSpace(strings.ToLower(user.Company.Address.Neighborhood))
 
 	userFound, err := _authRepository.FindByEmail(user.Account.Email)
+
 	if err != nil {
 		return nil, err
 	}
 	if userFound != nil {
 		return nil, errors.New("email already exists")
 	}
+	//Validate if signup is for a company role
+	if user.Role == entity.RoleCompany {
+		if user.Company.Name == "" || user.Company.Logo == "" || len(user.Company.Address.Location.Coordinates) != 2 || user.Company.Address.Location.Type != "Point" {
+			return nil, errors.New("some required fields are empty")
+		}
+	}
+	if user.Name == "" || user.LastName == "" || user.Account.Email == "" || user.Account.Password == "" {
+		return nil, errors.New("some required fields are empty")
+	}
+	if isRoleValid := util.VerifyRole(user.Role); !isRoleValid {
+		return nil, errors.New("invalid role")
+	}
+	hashedPassword, err := util.GeneratePassword(user.Account.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	user.ID = bson.NewObjectID()
+	user.Account.Password = hashedPassword
+	user.Account.Banned = false
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
 	return _authRepository.Create(user)
 }
 func (*authService) SignIn(credentials entity.Account) (string, error) {
