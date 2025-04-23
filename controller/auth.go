@@ -14,6 +14,7 @@ import (
 
 type AuthController interface {
 	Signup(c *gin.Context)
+	Signin(c *gin.Context)
 }
 
 type authController struct{}
@@ -69,5 +70,26 @@ func (*authController) Signup(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "user created",
+	})
+}
+func (*authController) Signin(c *gin.Context) {
+	var (
+		credentials entity.Account
+	)
+	if err := json.NewDecoder(c.Request.Body).Decode(&credentials); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	token, err := _authService.SignIn(credentials)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data": token,
 	})
 }
