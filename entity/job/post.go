@@ -18,7 +18,7 @@ type Post struct {
 	Industry         string          `json:"industry" bson:"industry"`
 	Schedule         string          `json:"schedule" bson:"schedule"`
 	ContractType     string          `json:"contract_type" bson:"contract_type"`
-	IsFormalJob      bool            `json:"is_formal_job" bson:"location"`
+	IsFormalJob      bool            `json:"is_formal_job" bson:"is_formal_job"`
 	Published        bool            `json:"published" bson:"published"`
 	CompanyID        string          `json:"company_id" bson:"company_id"`
 	CreatedAt        time.Time       `json:"created_at" bson:"created_at"`
