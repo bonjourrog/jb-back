@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/bonjourrog/jb/controller"
+	"github.com/bonjourrog/jb/middleware"
 	"github.com/bonjourrog/jb/repository/auth"
 	"github.com/bonjourrog/jb/repository/job"
 	"github.com/bonjourrog/jb/routes"
@@ -32,6 +33,6 @@ func main() {
 	}
 	httpRouter.POST("/api/auth/signup", authController.Signup)
 	httpRouter.POST("/api/auth/signin", authController.Signin)
-	httpRouter.POST("/api/job", jobController.NewJob)
+	httpRouter.POST("/api/job", jobController.NewJob, middleware.ValidateToken())
 	httpRouter.Serve(os.Getenv("PORT"))
 }
