@@ -1,0 +1,51 @@
+package middleware
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+func ValidateToken() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		_token := ctx.GetHeader("Authorization")
+		if _token == "" {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"error": "token required",
+			})
+			return
+		}
+
+		token, err := jwt.Parse(_token, func(t *jwt.Token) (interface{}, error) {
+			//check signing method
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method %v", t.Header["alg"])
+			}
+			return []byte(os.Getenv("SigningKey")), nil
+		})
+		if err != nil {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if !token.Valid {
+			ctx.AbortWithStatusJSON(401, gin.H{
+				"error": "invalid token",
+			})
+			return
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			ctx.Set("role", claims["role"])
+			ctx.Next()
+			return
+		}
+		ctx.AbortWithStatusJSON(401, gin.H{
+			"error": "invalid token",
+		})
+
+	}
+
+}
