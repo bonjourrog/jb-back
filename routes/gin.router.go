@@ -20,8 +20,9 @@ func NewGinRouter() Router {
 func (*ginRouter) GET(uri string, f func(c *gin.Context)) {
 	ginDispatch.GET(uri, f)
 }
-func (*ginRouter) POST(uri string, f func(c *gin.Context)) {
-	ginDispatch.POST(uri, f)
+func (*ginRouter) POST(uri string, f func(c *gin.Context), middlewares ...gin.HandlerFunc) {
+	handlers := append(middlewares, f)
+	ginDispatch.POST(uri, handlers...)
 }
 func (*ginRouter) DELETE(uri string, f func(c *gin.Context)) {
 	ginDispatch.DELETE(uri, f)
