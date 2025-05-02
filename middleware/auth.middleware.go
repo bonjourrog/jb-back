@@ -39,13 +39,12 @@ func ValidateToken() gin.HandlerFunc {
 		}
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			ctx.Set("role", claims["role"])
+			ctx.Set("user_id", claims["userId"])
 			ctx.Next()
 			return
 		}
 		ctx.AbortWithStatusJSON(401, gin.H{
 			"error": "invalid token",
 		})
-
 	}
-
 }
