@@ -48,3 +48,13 @@ func ValidateToken() gin.HandlerFunc {
 		})
 	}
 }
+func OnlyCompanyAccess() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		role, exist := ctx.Get("role")
+		if !exist || role != "company" {
+			ctx.AbortWithStatusJSON(403, gin.H{"error": "admin role required"})
+			return
+		}
+		ctx.Next()
+	}
+}
