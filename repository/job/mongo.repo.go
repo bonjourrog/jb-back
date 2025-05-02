@@ -12,7 +12,7 @@ import (
 
 type JobRepository interface {
 	Create(job job.Post) error
-	GetAll(filter bson.M) ([]job.Post, error)
+	GetAll(filter bson.M, page int) ([]job.Post, int64, error)
 }
 
 type jobRepository struct{}
@@ -37,10 +37,12 @@ func (*jobRepository) Create(job job.Post) error {
 	}
 	return nil
 }
-func (*jobRepository) GetAll(filter bson.M) ([]job.Post, error) {
+func (*jobRepository) GetAll(filter bson.M, page int) ([]job.Post, int64, error) {
 	var (
 		_db     = db.NewMongoConnection()
 		results []job.Post
+		limit   = 10
+		skip    = (page - 1) * limit
 	)
 
 	client := _db.Connection()
@@ -48,16 +50,20 @@ func (*jobRepository) GetAll(filter bson.M) ([]job.Post, error) {
 		client.Disconnect(context.TODO())
 	}()
 	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+	total, err := coll.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		return nil, 0, err
+	}
 	findOptions := options.Find()
-	findOptions.SetLimit(12)
+	findOptions.SetSkip(int64(skip)).SetLimit(int64(limit))
 	cursor, err := coll.Find(context.TODO(), filter, findOptions)
 	if err != nil {
-		return results, err
+		return results, 0, err
 	}
 	defer cursor.Close(context.TODO())
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		return results, err
+		return results, 0, err
 	}
 
-	return results, nil
+	return results, total, nil
 }

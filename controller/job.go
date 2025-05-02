@@ -2,7 +2,9 @@ package controller
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/bonjourrog/jb/entity/job"
 	"github.com/bonjourrog/jb/service"
@@ -62,6 +64,7 @@ func (*jobController) GetJobs(c *gin.Context) {
 		filter = bson.M{}
 		jobs   []job.Post
 	)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	query := c.Request.URL.Query()
 	if search := query.Get("search"); search != "" {
 		orFilter := bson.A{
@@ -92,15 +95,20 @@ func (*jobController) GetJobs(c *gin.Context) {
 	if industry := query.Get("industry"); industry != "" {
 		filter["industry"] = industry
 	}
-	jobs, err := _jobService.GetJobs(filter)
+	jobs, total, err := _jobService.GetJobs(filter, page)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
+	totalPages := int(math.Ceil(float64(total) / float64(12)))
 	c.JSON(http.StatusOK, gin.H{
-		"message": "successful request",
-		"data":    jobs,
+		"message":     "successful request",
+		"data":        jobs,
+		"page":        page,
+		"page_zise":   12,
+		"total":       total,
+		"total_pages": totalPages,
 	})
 }
