@@ -12,6 +12,7 @@ import (
 
 type JobService interface {
 	NewJob(job job.Post) error
+	GetJobs(filter bson.M) ([]job.Post, error)
 }
 type jobService struct{}
 
@@ -42,4 +43,14 @@ func (*jobService) NewJob(job job.Post) error {
 		return err
 	}
 	return nil
+}
+func (*jobService) GetJobs(filter bson.M) ([]job.Post, error) {
+	jobs, err := _jobRepo.GetAll(filter)
+	if err != nil {
+		return nil, err
+	}
+	if len(jobs) == 0 {
+		return nil, errors.New("no jobs found")
+	}
+	return jobs, nil
 }
