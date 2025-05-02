@@ -35,6 +35,14 @@ func (*jobController) NewJob(c *gin.Context) {
 		})
 		return
 	}
+	userId, ok := c.Get("user_id")
+	if userId == "" || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Invalid user ID",
+		})
+		return
+	}
+	job.CompanyID = userId.(string)
 	if err := _jobService.NewJob(job); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
