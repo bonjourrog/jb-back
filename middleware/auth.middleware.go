@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -56,5 +57,26 @@ func OnlyCompanyAccess() gin.HandlerFunc {
 			return
 		}
 		ctx.Next()
+	}
+}
+func CorsConfig() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+		for _, ao := range allowedOrigins {
+			if origin == ao {
+				fmt.Println("celulsr")
+				c.Header("Access-Control-Allow-Origin", ao)
+			}
+		}
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(200)
+			return
+		}
+
+		c.Next()
 	}
 }
