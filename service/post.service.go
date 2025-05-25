@@ -30,7 +30,7 @@ func (*jobService) NewJob(job job.Post) error {
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
 	job.Description = strings.TrimSpace(job.Description)
 
-	if job.Title == "" || job.ShortDescription == "" || job.Description == "" || job.CompanyID == "" || job.ContractType == "" || job.Industry == "" || job.Schedule == "" {
+	if job.Title == "" || job.ShortDescription == "" || job.Description == "" || job.CompanyID == bson.NilObjectID || job.ContractType == "" || job.Industry == "" || job.Schedule == "" {
 		return errors.New("some required fields are empty")
 	}
 

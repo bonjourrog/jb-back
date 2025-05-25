@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"
@@ -34,10 +33,8 @@ func (*jobController) NewJob(c *gin.Context) {
 		job job.Post
 	)
 
-	if err := json.NewDecoder(c.Request.Body).Decode(&job); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
-		})
+	if err := c.ShouldBindJSON(&job); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	userId, ok := c.Get("user_id")
@@ -47,7 +44,16 @@ func (*jobController) NewJob(c *gin.Context) {
 		})
 		return
 	}
-	job.CompanyID = userId.(string)
+	user_id, err := bson.ObjectIDFromHex(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	job.CompanyID = user_id
+
 	if err := _jobService.NewJob(job); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
