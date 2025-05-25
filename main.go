@@ -28,6 +28,7 @@ var (
 )
 
 func main() {
+	httpRouter.Use(middleware.CorsConfig())
 	if err := godotenv.Load(); err != nil {
 		log.Println("Error loading env file")
 	}
