@@ -7,12 +7,12 @@ import (
 	"github.com/bonjourrog/jb/db"
 	"github.com/bonjourrog/jb/entity/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type JobRepository interface {
 	Create(job job.Post) error
-	GetAll(filter bson.M, page int) ([]job.Post, int64, error)
+	GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 }
 
 type jobRepository struct{}
@@ -37,10 +37,10 @@ func (*jobRepository) Create(job job.Post) error {
 	}
 	return nil
 }
-func (*jobRepository) GetAll(filter bson.M, page int) ([]job.Post, int64, error) {
+func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
 	var (
 		_db     = db.NewMongoConnection()
-		results []job.Post
+		results []job.PostWithCompany
 		limit   = 10
 		skip    = (page - 1) * limit
 	)
@@ -54,9 +54,41 @@ func (*jobRepository) GetAll(filter bson.M, page int) ([]job.Post, int64, error)
 	if err != nil {
 		return nil, 0, err
 	}
-	findOptions := options.Find()
-	findOptions.SetSkip(int64(skip)).SetLimit(int64(limit))
-	cursor, err := coll.Find(context.TODO(), filter, findOptions)
+	pipeline := mongo.Pipeline{
+		// Filtrado
+		{{"$match", filter}},
+
+		// Paginación
+		{{"$skip", int64(skip)}},
+		{{"$limit", int64(limit)}},
+
+		// Join con companies
+		{{"$lookup", bson.M{
+			"from":         "users",
+			"localField":   "company_id",
+			"foreignField": "_id",
+			"as":           "company",
+		}}},
+		{{"$unwind", bson.M{
+			"path":                       "$company",
+			"preserveNullAndEmptyArrays": true,
+		}}},
+		{{"$addFields", bson.M{
+			"company_name": "$company.company.name",
+			"company_logo": "$company.company.logo",
+		}}},
+	}
+
+	// findOptions := options.Find()
+	// findOptions.SetSkip(int64(skip)).SetLimit(int64(limit))
+	// cursor, err := coll.Find(context.TODO(), filter, findOptions)
+	cursor, err := coll.Aggregate(context.TODO(), pipeline)
+	// for cursor.Next(context.TODO()) {
+	// 	var raw bson.M
+	// 	cursor.Decode(&raw)
+	// 	fmt.Printf("%+v\n", raw)
+	// 	break
+	// }
 	if err != nil {
 		return results, 0, err
 	}

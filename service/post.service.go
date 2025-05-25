@@ -12,7 +12,7 @@ import (
 
 type JobService interface {
 	NewJob(job job.Post) error
-	GetJobs(filter bson.M, page int) ([]job.Post, int64, error)
+	GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 }
 type jobService struct{}
 
@@ -44,7 +44,7 @@ func (*jobService) NewJob(job job.Post) error {
 	}
 	return nil
 }
-func (*jobService) GetJobs(filter bson.M, page int) ([]job.Post, int64, error) {
+func (*jobService) GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
 	jobs, total, err := _jobRepo.GetAll(filter, page)
 	if err != nil {
 		return nil, 0, err

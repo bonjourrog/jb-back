@@ -68,7 +68,7 @@ func (*jobController) NewJob(c *gin.Context) {
 func (*jobController) GetJobs(c *gin.Context) {
 	var (
 		filter = bson.M{}
-		jobs   []job.Post
+		jobs   []job.PostWithCompany
 	)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	query := c.Request.URL.Query()
