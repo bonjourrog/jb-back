@@ -14,5 +14,5 @@ type User struct {
 	Role      Role          `json:"role" bson:"role"`
 	Company   Company       `json:"company" bson:"company"`
 	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at" bson:"email"`
+	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at"`
 }
