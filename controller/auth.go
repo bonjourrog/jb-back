@@ -30,18 +30,21 @@ func (*authController) Signup(c *gin.Context) {
 	var user entity.User
 	if err := json.NewDecoder(c.Request.Body).Decode(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"success": false,
+			"error":   err.Error(),
 		})
 		return
 	}
 	_, err := _authService.Signup(user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"success": false,
+			"error":   err.Error(),
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
+		"success": true,
 		"message": "user created",
 	})
 }
