@@ -36,3 +36,6 @@ func (*ginRouter) Serve(port string) {
 		log.Fatal(err)
 	}
 }
+func (*ginRouter) Use(middleware ...gin.HandlerFunc) {
+	ginDispatch.Use(middleware...)
+}
