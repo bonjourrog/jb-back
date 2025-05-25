@@ -24,3 +24,9 @@ type Post struct {
 	CreatedAt        time.Time       `json:"created_at" bson:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at" bson:"updated_at"`
 }
+
+type PostWithCompany struct {
+	Post        `bson:",inline"`
+	CompanyName string `bson:"company_name" json:"company_name"`
+	CompanyLogo string `bson:"company_logo" json:"company_logo"`
+}
