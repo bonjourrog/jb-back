@@ -65,7 +65,6 @@ func CorsConfig() gin.HandlerFunc {
 		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 		for _, ao := range allowedOrigins {
 			if origin == ao {
-				fmt.Println("celulsr")
 				c.Header("Access-Control-Allow-Origin", ao)
 			}
 		}
