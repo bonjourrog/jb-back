@@ -17,18 +17,21 @@ func NewGinRouter() Router {
 	return &ginRouter{}
 }
 
-func (*ginRouter) GET(uri string, f func(c *gin.Context)) {
-	ginDispatch.GET(uri, f)
+func (*ginRouter) GET(uri string, f func(c *gin.Context), middlewares ...gin.HandlerFunc) {
+	handlers := append(middlewares, f)
+	ginDispatch.GET(uri, handlers...)
 }
 func (*ginRouter) POST(uri string, f func(c *gin.Context), middlewares ...gin.HandlerFunc) {
 	handlers := append(middlewares, f)
 	ginDispatch.POST(uri, handlers...)
 }
-func (*ginRouter) DELETE(uri string, f func(c *gin.Context)) {
-	ginDispatch.DELETE(uri, f)
+func (*ginRouter) DELETE(uri string, f func(c *gin.Context), middlewares ...gin.HandlerFunc) {
+	handlers := append(middlewares, f)
+	ginDispatch.DELETE(uri, handlers...)
 }
-func (*ginRouter) PUT(uri string, f func(c *gin.Context)) {
-	ginDispatch.PUT(uri, f)
+func (*ginRouter) PUT(uri string, f func(c *gin.Context), middlewares ...gin.HandlerFunc) {
+	handlers := append(middlewares, f)
+	ginDispatch.PUT(uri, handlers...)
 }
 func (*ginRouter) Serve(port string) {
 	fmt.Printf("Server running in port %v ", port)
