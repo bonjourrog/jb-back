@@ -13,6 +13,7 @@ import (
 type JobRepository interface {
 	Create(job job.Post) error
 	GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
+	Update(job job.Post) error
 }
 
 type jobRepository struct{}
@@ -98,4 +99,21 @@ func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, in
 	}
 
 	return results, total, nil
+}
+
+func (*jobRepository) Update(job job.Post) error {
+	var (
+		_db = db.NewMongoConnection()
+	)
+
+	client := _db.Connection()
+	defer func() {
+		client.Disconnect(context.TODO())
+	}()
+	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+	_, err := coll.UpdateOne(context.TODO(), bson.M{"_id": job.ID}, bson.M{"$set": job})
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -13,6 +13,7 @@ import (
 type JobService interface {
 	NewJob(job job.Post) error
 	GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
+	UpdateJob(job job.Post) error
 }
 type jobService struct{}
 
@@ -53,4 +54,19 @@ func (*jobService) GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int6
 		return nil, 0, errors.New("no jobs found")
 	}
 	return jobs, total, nil
+}
+func (jobService) UpdateJob(job job.Post) error {
+	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
+	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
+	job.Description = strings.TrimSpace(job.Description)
+
+	if job.Title == "" || job.ShortDescription == "" || job.Description == "" || job.CompanyID == bson.NilObjectID || job.ContractType == "" || job.Industry == "" || job.Schedule == "" {
+		return errors.New("some required fields are empty")
+	}
+	job.UpdatedAt = time.Now()
+	err := _jobRepo.Update(job)
+	if err != nil {
+		return err
+	}
+	return nil
 }

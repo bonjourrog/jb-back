@@ -15,6 +15,7 @@ import (
 type JobController interface {
 	NewJob(c *gin.Context)
 	GetJobs(c *gin.Context)
+	UpdateJob(c *gin.Context)
 }
 
 type jobController struct{}
@@ -127,5 +128,25 @@ func (*jobController) GetJobs(c *gin.Context) {
 		"page_zise":   12,
 		"total":       total,
 		"total_pages": totalPages,
+	})
+}
+func (jobController) UpdateJob(c *gin.Context) {
+	var (
+		job job.Post
+	)
+
+	if err := c.ShouldBindJSON(&job); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err := _jobService.UpdateJob(job)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "job updated succesfully",
 	})
 }

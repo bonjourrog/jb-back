@@ -34,6 +34,7 @@ func main() {
 	}
 	httpRouter.POST("/api/auth/signup", authController.Signup)
 	httpRouter.POST("/api/auth/signin", authController.Signin)
+	httpRouter.PUT("/api/job", jobController.UpdateJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.POST("/api/job", jobController.NewJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.GET("/api/job", jobController.GetJobs)
 	httpRouter.Serve(os.Getenv("PORT"))
