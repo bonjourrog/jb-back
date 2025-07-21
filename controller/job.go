@@ -16,6 +16,7 @@ type JobController interface {
 	NewJob(c *gin.Context)
 	GetJobs(c *gin.Context)
 	UpdateJob(c *gin.Context)
+	DeleteJob(c *gin.Context)
 }
 
 type jobController struct{}
@@ -148,5 +149,48 @@ func (jobController) UpdateJob(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "job updated succesfully",
+	})
+}
+func (*jobController) DeleteJob(c *gin.Context) {
+	userId, ok := c.Get("user_id")
+
+	if userId == "" || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Invalid user ID",
+		})
+		return
+	}
+	user_id, err := bson.ObjectIDFromHex(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	job_id := c.Param("id")
+
+	if job_id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no id provided",
+		})
+		return
+	}
+	jobId, err := bson.ObjectIDFromHex(job_id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	err = _jobService.DeleteJob(jobId, user_id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Job deleted successfully",
 	})
 }
