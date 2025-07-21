@@ -14,6 +14,7 @@ type JobService interface {
 	NewJob(job job.Post) error
 	GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 	UpdateJob(job job.Post) error
+	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error
 }
 type jobService struct{}
 
@@ -69,4 +70,7 @@ func (jobService) UpdateJob(job job.Post) error {
 		return err
 	}
 	return nil
+}
+func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error {
+	return _jobRepo.Delete(job_id, user_id)
 }
