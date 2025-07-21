@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/bonjourrog/jb/db"
@@ -14,6 +15,7 @@ type JobRepository interface {
 	Create(job job.Post) error
 	GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 	Update(job job.Post) error
+	Delete(job_id bson.ObjectID, user_id bson.ObjectID) error
 }
 
 type jobRepository struct{}
@@ -114,6 +116,25 @@ func (*jobRepository) Update(job job.Post) error {
 	_, err := coll.UpdateOne(context.TODO(), bson.M{"_id": job.ID}, bson.M{"$set": job})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+func (*jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error {
+	var (
+		_db = db.NewMongoConnection()
+	)
+
+	client := _db.Connection()
+	defer func() {
+		client.Disconnect(context.Background())
+	}()
+	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+	res, err := coll.DeleteOne(context.TODO(), bson.M{"_id": job_id, "company_id": user_id})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return errors.New("no se pudo eliminar el empleo")
 	}
 	return nil
 }
