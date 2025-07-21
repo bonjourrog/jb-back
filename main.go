@@ -37,5 +37,6 @@ func main() {
 	httpRouter.PUT("/api/job", jobController.UpdateJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.POST("/api/job", jobController.NewJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.GET("/api/job", jobController.GetJobs)
+	httpRouter.DELETE("/api/job/:id", jobController.DeleteJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.Serve(os.Getenv("PORT"))
 }
