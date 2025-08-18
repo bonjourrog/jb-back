@@ -16,6 +16,7 @@ type JobRepository interface {
 	GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 	Update(job job.Post) error
 	Delete(job_id bson.ObjectID, user_id bson.ObjectID) error
+	ApplyToJob(application job.Application) error
 }
 
 type jobRepository struct{}
@@ -136,5 +137,25 @@ func (*jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error 
 	if res.DeletedCount == 0 {
 		return errors.New("no se pudo eliminar el empleo")
 	}
+	return nil
+}
+func (*jobRepository) ApplyToJob(application job.Application) error {
+
+	var (
+		_db = db.NewMongoConnection()
+	)
+	client := _db.Connection()
+	defer func() {
+		client.Disconnect(context.TODO())
+	}()
+
+	coll := client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	// Insert the application into the database
+	_, err := coll.InsertOne(context.TODO(), application)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
