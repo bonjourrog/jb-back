@@ -17,7 +17,7 @@ type JobRepository interface {
 	Update(job job.Post) error
 	Delete(job_id bson.ObjectID, user_id bson.ObjectID) error
 	ApplyToJob(application job.Application) error
-	IsUserAleadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error)
+	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error)
 }
 
 type jobRepository struct{}
@@ -161,7 +161,7 @@ func (*jobRepository) ApplyToJob(application job.Application) error {
 	return nil
 }
 
-func (*jobRepository) IsUserAleadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
+func (*jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
 	var (
 		_db = db.NewMongoConnection()
 	)
