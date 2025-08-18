@@ -17,6 +17,7 @@ type JobRepository interface {
 	Update(job job.Post) error
 	Delete(job_id bson.ObjectID, user_id bson.ObjectID) error
 	ApplyToJob(application job.Application) error
+	IsUserAleadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error)
 }
 
 type jobRepository struct{}
@@ -158,4 +159,26 @@ func (*jobRepository) ApplyToJob(application job.Application) error {
 	}
 
 	return nil
+}
+
+func (*jobRepository) IsUserAleadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
+	var (
+		_db = db.NewMongoConnection()
+	)
+	client := _db.Connection()
+	defer func() {
+		client.Disconnect(context.TODO())
+	}()
+
+	coll := client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	count, err := coll.CountDocuments(context.TODO(), bson.M{
+		"user_id": user_id,
+		"job_id":  job_id,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
