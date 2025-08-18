@@ -15,6 +15,7 @@ type JobService interface {
 	GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
 	UpdateJob(job job.Post) error
 	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error
+	ApplyToJob(user_id string, job_id string) error
 }
 type jobService struct{}
 
@@ -73,4 +74,38 @@ func (jobService) UpdateJob(job job.Post) error {
 }
 func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error {
 	return _jobRepo.Delete(job_id, user_id)
+}
+func (*jobService) ApplyToJob(user_id string, job_id string) error {
+	var (
+		application job.Application
+	)
+	application.ID = bson.NewObjectID()
+	UserID, err := bson.ObjectIDFromHex(user_id)
+	if err != nil {
+		return err
+	}
+	application.UserID = UserID
+	JobID, err := bson.ObjectIDFromHex(job_id)
+	if err != nil {
+		return err
+	}
+	application.JobID = JobID
+	if user_id == "" || job_id == "" {
+		return errors.New("user id or job id is empty")
+	}
+
+	alreadyApplied, err := _jobRepo.IsUserAlreadyApplied(UserID, JobID)
+	if err != nil {
+		return err
+	}
+	if alreadyApplied {
+		return errors.New("user has already applied to this job")
+	}
+
+	application.AppliedAt = time.Now()
+
+	if err := _jobRepo.ApplyToJob(application); err != nil {
+		return err
+	}
+	return nil
 }
