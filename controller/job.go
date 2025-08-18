@@ -17,6 +17,7 @@ type JobController interface {
 	GetJobs(c *gin.Context)
 	UpdateJob(c *gin.Context)
 	DeleteJob(c *gin.Context)
+	ApplyToJob(c *gin.Context)
 }
 
 type jobController struct{}
@@ -192,5 +193,33 @@ func (*jobController) DeleteJob(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Job deleted successfully",
+	})
+}
+func (*jobController) ApplyToJob(c *gin.Context) {
+	userId, ok := c.Get("user_id")
+	if userId == "" || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Invalid user ID",
+		})
+		return
+	}
+	user_id := userId.(string)
+	job_id := c.Param("id")
+
+	if job_id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no id provided",
+		})
+		return
+	}
+
+	if err := _jobService.ApplyToJob(user_id, job_id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Application submitted successfully",
 	})
 }
