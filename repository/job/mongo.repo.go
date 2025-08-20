@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/bonjourrog/jb/db"
@@ -44,10 +45,11 @@ func (*jobRepository) Create(job job.Post) error {
 }
 func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
 	var (
-		_db     = db.NewMongoConnection()
-		results []job.PostWithCompany
-		limit   = 10
-		skip    = (page - 1) * limit
+		_db         = db.NewMongoConnection()
+		results     []job.PostWithCompany
+		limit       = 10
+		skip        = (page - 1) * limit
+		lookupStage bson.D
 	)
 
 	client := _db.Connection()
@@ -59,7 +61,36 @@ func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, in
 	if err != nil {
 		return nil, 0, err
 	}
+	var userId = filter["user_id"]
+	if userId != bson.NilObjectID {
+		lookupStage = bson.D{{
+			"$lookup", bson.M{
+				"from": "applications",
+				"let":  bson.M{"jobId": "$_id"},
+				"pipeline": mongo.Pipeline{
+					{{"$match", bson.M{
+						"$expr": bson.M{
+							"$and": bson.A{
+								bson.M{"$eq": bson.A{"$job_id", "$$jobId"}},
+								bson.M{"$eq": bson.A{"$user_id", userId}},
+							},
+						},
+					}}},
+				},
+				"as": "userApplications",
+			},
+		}}
+	} else {
+		lookupStage = bson.D{}
+	}
+	delete(filter, "user_id")
+
+	fmt.Println(userId)
 	pipeline := mongo.Pipeline{
+		lookupStage,
+		{
+			{"$match", bson.M{"userApplications": bson.M{"$size": 0}}},
+		},
 		// Filtrado
 		{{"$match", filter}},
 
