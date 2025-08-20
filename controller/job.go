@@ -75,6 +75,17 @@ func (*jobController) GetJobs(c *gin.Context) {
 	)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	query := c.Request.URL.Query()
+	if user_id := query.Get("user_id"); user_id != "" {
+		userId, err := bson.ObjectIDFromHex(user_id)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+		filter["user_id"] = userId
+	}
+
 	if company_id := query.Get("company_id"); company_id != "" {
 		companyId, err := bson.ObjectIDFromHex(company_id)
 		if err != nil {
@@ -82,9 +93,8 @@ func (*jobController) GetJobs(c *gin.Context) {
 				"message": err.Error(),
 			})
 			return
-		} else {
-			filter["company_id"] = companyId
 		}
+		filter["company_id"] = companyId
 	}
 	if search := query.Get("search"); search != "" {
 		orFilter := bson.A{
