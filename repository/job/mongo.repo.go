@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bonjourrog/jb/db"
 	"github.com/bonjourrog/jb/entity/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -21,42 +20,30 @@ type JobRepository interface {
 	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error)
 }
 
-type jobRepository struct{}
-
-func NewJobRepository() JobRepository {
-	return &jobRepository{}
+type jobRepository struct {
+	client *mongo.Client
 }
 
-func (*jobRepository) Create(job job.Post) error {
-	var (
-		_db = db.NewMongoConnection()
-	)
+func NewJobRepository(client *mongo.Client) JobRepository {
+	return &jobRepository{client: client}
+}
 
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.TODO())
-	}()
-	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+func (r *jobRepository) Create(job job.Post) error {
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
 	_, err := coll.InsertOne(context.TODO(), job)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
+func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
 	var (
-		_db         = db.NewMongoConnection()
 		results     []job.PostWithCompany
 		limit       = 10
 		skip        = (page - 1) * limit
 		lookupStage bson.D
 	)
-
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.TODO())
-	}()
-	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
 	total, err := coll.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		return nil, 0, err
@@ -136,32 +123,16 @@ func (*jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, in
 	return results, total, nil
 }
 
-func (*jobRepository) Update(job job.Post) error {
-	var (
-		_db = db.NewMongoConnection()
-	)
-
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.TODO())
-	}()
-	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+func (r *jobRepository) Update(job job.Post) error {
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
 	_, err := coll.UpdateOne(context.TODO(), bson.M{"_id": job.ID}, bson.M{"$set": job})
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error {
-	var (
-		_db = db.NewMongoConnection()
-	)
-
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.Background())
-	}()
-	coll := client.Database(os.Getenv("DATABASE")).Collection("jobs")
+func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error {
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
 	res, err := coll.DeleteOne(context.TODO(), bson.M{"_id": job_id, "company_id": user_id})
 	if err != nil {
 		return err
@@ -171,17 +142,8 @@ func (*jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error 
 	}
 	return nil
 }
-func (*jobRepository) ApplyToJob(application job.Application) error {
-
-	var (
-		_db = db.NewMongoConnection()
-	)
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.TODO())
-	}()
-
-	coll := client.Database(os.Getenv("DATABASE")).Collection("applications")
+func (r *jobRepository) ApplyToJob(application job.Application) error {
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
 	// Insert the application into the database
 	_, err := coll.InsertOne(context.TODO(), application)
@@ -192,16 +154,8 @@ func (*jobRepository) ApplyToJob(application job.Application) error {
 	return nil
 }
 
-func (*jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
-	var (
-		_db = db.NewMongoConnection()
-	)
-	client := _db.Connection()
-	defer func() {
-		client.Disconnect(context.TODO())
-	}()
-
-	coll := client.Database(os.Getenv("DATABASE")).Collection("applications")
+func (r *jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
+	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
 	count, err := coll.CountDocuments(context.TODO(), bson.M{
 		"user_id": user_id,

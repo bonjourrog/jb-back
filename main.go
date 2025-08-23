@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
 	"github.com/bonjourrog/jb/controller"
+	"github.com/bonjourrog/jb/db"
 	"github.com/bonjourrog/jb/middleware"
 	"github.com/bonjourrog/jb/repository/auth"
 	"github.com/bonjourrog/jb/repository/job"
@@ -13,25 +15,41 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-
-	// Auth
-	authRepo       auth.AuthRepo             = auth.NewAuthRepository()
-	authService    service.AuthService       = service.NewAuthService(authRepo)
-	authController controller.AuthController = controller.NewAuthController(authService)
-	httpRouter     routes.Router             = routes.NewGinRouter()
-
-	// Job
-	jobRepo       job.JobRepository        = job.NewJobRepository()
-	jobService    service.JobService       = service.NewPostService(jobRepo)
-	jobController controller.JobController = controller.NewJobController(jobService)
-)
-
 func main() {
+	var httpRouter routes.Router = routes.NewGinRouter()
 	httpRouter.Use(middleware.CorsConfig())
+
+	// Load env variables
 	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading env file")
+		log.Fatal("Error loading env file")
 	}
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal("MONGODB_URI not found")
+	}
+	mongoClient, err := db.NewMongoClient(uri)
+	if err != nil {
+		log.Fatal("Cannot connect to MongoDB", err)
+	}
+	defer func() {
+		if err = mongoClient.Disconnect(context.Background()); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	var (
+
+		// Auth
+		authRepo       auth.AuthRepo             = auth.NewAuthRepository(mongoClient)
+		authService    service.AuthService       = service.NewAuthService(authRepo)
+		authController controller.AuthController = controller.NewAuthController(authService)
+
+		// Job
+		jobRepo       job.JobRepository        = job.NewJobRepository(mongoClient)
+		jobService    service.JobService       = service.NewPostService(jobRepo)
+		jobController controller.JobController = controller.NewJobController(jobService)
+	)
+
 	httpRouter.POST("/api/auth/signup", authController.Signup)
 	httpRouter.POST("/api/auth/signin", authController.Signin)
 	httpRouter.PUT("/api/job", jobController.UpdateJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
