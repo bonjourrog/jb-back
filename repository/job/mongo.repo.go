@@ -3,7 +3,6 @@ package job
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/bonjourrog/jb/entity/job"
@@ -12,12 +11,12 @@ import (
 )
 
 type JobRepository interface {
-	Create(job job.Post) error
-	GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
-	Update(job job.Post) error
-	Delete(job_id bson.ObjectID, user_id bson.ObjectID) error
-	ApplyToJob(application job.Application) error
-	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error)
+	Create(job job.Post, ctx context.Context) error
+	GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
+	Update(job job.Post, ctx context.Context) error
+	Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
+	ApplyToJob(application job.Application, ctx context.Context) error
+	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
 }
 
 type jobRepository struct {
@@ -28,15 +27,15 @@ func NewJobRepository(client *mongo.Client) JobRepository {
 	return &jobRepository{client: client}
 }
 
-func (r *jobRepository) Create(job job.Post) error {
+func (r *jobRepository) Create(job job.Post, ctx context.Context) error {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	_, err := coll.InsertOne(context.TODO(), job)
+	_, err := coll.InsertOne(ctx, job)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
+func (r *jobRepository) GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
 	var (
 		results     []job.PostWithCompany
 		limit       = 10
@@ -44,7 +43,7 @@ func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, 
 		lookupStage bson.D
 	)
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	total, err := coll.CountDocuments(context.TODO(), filter)
+	total, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -72,7 +71,6 @@ func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, 
 	}
 	delete(filter, "user_id")
 
-	fmt.Println(userId)
 	pipeline := mongo.Pipeline{
 		lookupStage,
 		{
@@ -105,7 +103,7 @@ func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, 
 	// findOptions := options.Find()
 	// findOptions.SetSkip(int64(skip)).SetLimit(int64(limit))
 	// cursor, err := coll.Find(context.TODO(), filter, findOptions)
-	cursor, err := coll.Aggregate(context.TODO(), pipeline)
+	cursor, err := coll.Aggregate(ctx, pipeline)
 	// for cursor.Next(context.TODO()) {
 	// 	var raw bson.M
 	// 	cursor.Decode(&raw)
@@ -115,25 +113,25 @@ func (r *jobRepository) GetAll(filter bson.M, page int) ([]job.PostWithCompany, 
 	if err != nil {
 		return results, 0, err
 	}
-	defer cursor.Close(context.TODO())
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	defer cursor.Close(ctx)
+	if err = cursor.All(ctx, &results); err != nil {
 		return results, 0, err
 	}
 
 	return results, total, nil
 }
 
-func (r *jobRepository) Update(job job.Post) error {
+func (r *jobRepository) Update(job job.Post, ctx context.Context) error {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	_, err := coll.UpdateOne(context.TODO(), bson.M{"_id": job.ID}, bson.M{"$set": job})
+	_, err := coll.UpdateOne(ctx, bson.M{"_id": job.ID}, bson.M{"$set": job})
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) error {
+func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	res, err := coll.DeleteOne(context.TODO(), bson.M{"_id": job_id, "company_id": user_id})
+	res, err := coll.DeleteOne(ctx, bson.M{"_id": job_id, "company_id": user_id})
 	if err != nil {
 		return err
 	}
@@ -142,11 +140,11 @@ func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID) erro
 	}
 	return nil
 }
-func (r *jobRepository) ApplyToJob(application job.Application) error {
+func (r *jobRepository) ApplyToJob(application job.Application, ctx context.Context) error {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
 	// Insert the application into the database
-	_, err := coll.InsertOne(context.TODO(), application)
+	_, err := coll.InsertOne(ctx, application)
 	if err != nil {
 		return err
 	}
@@ -154,10 +152,10 @@ func (r *jobRepository) ApplyToJob(application job.Application) error {
 	return nil
 }
 
-func (r *jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID) (bool, error) {
+func (r *jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error) {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
-	count, err := coll.CountDocuments(context.TODO(), bson.M{
+	count, err := coll.CountDocuments(ctx, bson.M{
 		"user_id": user_id,
 		"job_id":  job_id,
 	})

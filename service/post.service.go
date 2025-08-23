@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -11,11 +12,11 @@ import (
 )
 
 type JobService interface {
-	NewJob(job job.Post) error
-	GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error)
-	UpdateJob(job job.Post) error
-	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error
-	ApplyToJob(user_id string, job_id string) error
+	NewJob(job job.Post, ctx context.Context) error
+	GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
+	UpdateJob(job job.Post, ctx context.Context) error
+	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
+	ApplyToJob(user_id string, job_id string, ctx context.Context) error
 }
 type jobService struct{}
 
@@ -27,7 +28,7 @@ func NewPostService(jobRepo _job.JobRepository) JobService {
 	_jobRepo = jobRepo
 	return &jobService{}
 }
-func (*jobService) NewJob(job job.Post) error {
+func (*jobService) NewJob(job job.Post, ctx context.Context) error {
 
 	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
@@ -42,13 +43,13 @@ func (*jobService) NewJob(job job.Post) error {
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = time.Now()
 
-	if err := _jobRepo.Create(job); err != nil {
+	if err := _jobRepo.Create(job, ctx); err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobService) GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int64, error) {
-	jobs, total, err := _jobRepo.GetAll(filter, page)
+func (*jobService) GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
+	jobs, total, err := _jobRepo.GetAll(filter, page, ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -57,7 +58,7 @@ func (*jobService) GetJobs(filter bson.M, page int) ([]job.PostWithCompany, int6
 	}
 	return jobs, total, nil
 }
-func (jobService) UpdateJob(job job.Post) error {
+func (jobService) UpdateJob(job job.Post, ctx context.Context) error {
 	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
 	job.Description = strings.TrimSpace(job.Description)
@@ -66,16 +67,16 @@ func (jobService) UpdateJob(job job.Post) error {
 		return errors.New("some required fields are empty")
 	}
 	job.UpdatedAt = time.Now()
-	err := _jobRepo.Update(job)
+	err := _jobRepo.Update(job, ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID) error {
-	return _jobRepo.Delete(job_id, user_id)
+func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error {
+	return _jobRepo.Delete(job_id, user_id, ctx)
 }
-func (*jobService) ApplyToJob(user_id string, job_id string) error {
+func (*jobService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
 	var (
 		application job.Application
 	)
@@ -94,7 +95,7 @@ func (*jobService) ApplyToJob(user_id string, job_id string) error {
 		return errors.New("user id or job id is empty")
 	}
 
-	alreadyApplied, err := _jobRepo.IsUserAlreadyApplied(UserID, JobID)
+	alreadyApplied, err := _jobRepo.IsUserAlreadyApplied(UserID, JobID, ctx)
 	if err != nil {
 		return err
 	}
@@ -104,7 +105,7 @@ func (*jobService) ApplyToJob(user_id string, job_id string) error {
 
 	application.AppliedAt = time.Now()
 
-	if err := _jobRepo.ApplyToJob(application); err != nil {
+	if err := _jobRepo.ApplyToJob(application, ctx); err != nil {
 		return err
 	}
 	return nil

@@ -34,6 +34,7 @@ func NewJobController(jobService service.JobService) JobController {
 func (*jobController) NewJob(c *gin.Context) {
 	var (
 		job job.Post
+		cxt = c.Request.Context()
 	)
 
 	if err := c.ShouldBindJSON(&job); err != nil {
@@ -57,7 +58,7 @@ func (*jobController) NewJob(c *gin.Context) {
 
 	job.CompanyID = user_id
 
-	if err := _jobService.NewJob(job); err != nil {
+	if err := _jobService.NewJob(job, cxt); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
@@ -70,6 +71,7 @@ func (*jobController) NewJob(c *gin.Context) {
 }
 func (*jobController) GetJobs(c *gin.Context) {
 	var (
+		ctx    = c.Request.Context()
 		filter = bson.M{}
 		jobs   []job.PostWithCompany
 	)
@@ -125,7 +127,7 @@ func (*jobController) GetJobs(c *gin.Context) {
 	if industry := query.Get("industry"); industry != "" {
 		filter["industry"] = industry
 	}
-	jobs, total, err := _jobService.GetJobs(filter, page)
+	jobs, total, err := _jobService.GetJobs(filter, page, ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
@@ -144,6 +146,7 @@ func (*jobController) GetJobs(c *gin.Context) {
 }
 func (jobController) UpdateJob(c *gin.Context) {
 	var (
+		ctx = c.Request.Context()
 		job job.Post
 	)
 
@@ -151,7 +154,7 @@ func (jobController) UpdateJob(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	err := _jobService.UpdateJob(job)
+	err := _jobService.UpdateJob(job, ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
@@ -163,6 +166,7 @@ func (jobController) UpdateJob(c *gin.Context) {
 	})
 }
 func (*jobController) DeleteJob(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 
 	if userId == "" || !ok {
@@ -194,7 +198,7 @@ func (*jobController) DeleteJob(c *gin.Context) {
 		})
 		return
 	}
-	err = _jobService.DeleteJob(jobId, user_id)
+	err = _jobService.DeleteJob(jobId, user_id, ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
@@ -206,6 +210,7 @@ func (*jobController) DeleteJob(c *gin.Context) {
 	})
 }
 func (*jobController) ApplyToJob(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 	if userId == "" || !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -223,7 +228,7 @@ func (*jobController) ApplyToJob(c *gin.Context) {
 		return
 	}
 
-	if err := _jobService.ApplyToJob(user_id, job_id); err != nil {
+	if err := _jobService.ApplyToJob(user_id, job_id, ctx); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
