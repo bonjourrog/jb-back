@@ -27,6 +27,7 @@ func NewAuthController(authService service.AuthService) AuthController {
 
 // Signup handles user registration by validating input and creating a new user account.
 func (*authController) Signup(c *gin.Context) {
+	ctx := c.Request.Context()
 	var user entity.User
 	if err := json.NewDecoder(c.Request.Body).Decode(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -35,7 +36,7 @@ func (*authController) Signup(c *gin.Context) {
 		})
 		return
 	}
-	_, err := _authService.Signup(user)
+	_, err := _authService.Signup(user, ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -49,6 +50,7 @@ func (*authController) Signup(c *gin.Context) {
 	})
 }
 func (*authController) Signin(c *gin.Context) {
+	ctx := c.Request.Context()
 	var (
 		credentials entity.Account
 	)
@@ -58,7 +60,7 @@ func (*authController) Signin(c *gin.Context) {
 		})
 		return
 	}
-	token, err := _authService.SignIn(credentials)
+	token, err := _authService.SignIn(credentials, ctx)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),

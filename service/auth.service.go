@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
@@ -15,8 +16,8 @@ import (
 )
 
 type AuthService interface {
-	Signup(user entity.User) (*mongo.InsertOneResult, error)
-	SignIn(credentials entity.Account) (string, error)
+	Signup(user entity.User, ctx context.Context) (*mongo.InsertOneResult, error)
+	SignIn(credentials entity.Account, ctx context.Context) (string, error)
 }
 
 type authService struct{}
@@ -30,7 +31,7 @@ func NewAuthService(authRepository auth.AuthRepo) AuthService {
 	return &authService{}
 }
 
-func (*authService) Signup(user entity.User) (*mongo.InsertOneResult, error) {
+func (*authService) Signup(user entity.User, ctx context.Context) (*mongo.InsertOneResult, error) {
 	//Remove leading and trailing spaces from some fields in case they have them
 	user.Account.Email = strings.TrimSpace(strings.ToLower(user.Account.Email))
 	user.Name = strings.TrimSpace(strings.ToLower(user.Name))
@@ -39,7 +40,7 @@ func (*authService) Signup(user entity.User) (*mongo.InsertOneResult, error) {
 	user.Company.Address.SecondStreet = strings.TrimSpace(strings.ToLower(user.Company.Address.SecondStreet))
 	user.Company.Address.Neighborhood = strings.TrimSpace(strings.ToLower(user.Company.Address.Neighborhood))
 
-	userFound, err := _authRepository.FindByEmail(user.Account.Email)
+	userFound, err := _authRepository.FindByEmail(user.Account.Email, ctx)
 
 	if err != nil {
 		return nil, err
@@ -70,10 +71,10 @@ func (*authService) Signup(user entity.User) (*mongo.InsertOneResult, error) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	return _authRepository.Create(user)
+	return _authRepository.Create(user, ctx)
 }
-func (*authService) SignIn(credentials entity.Account) (string, error) {
-	user, err := _authRepository.FindByEmail(credentials.Email)
+func (*authService) SignIn(credentials entity.Account, ctx context.Context) (string, error) {
+	user, err := _authRepository.FindByEmail(credentials.Email, ctx)
 	if err != nil {
 		return "", err
 	}

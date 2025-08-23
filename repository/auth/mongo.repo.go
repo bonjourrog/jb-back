@@ -14,8 +14,8 @@ type authrepo struct {
 }
 
 type AuthRepo interface {
-	Create(user entity.User) (*mongo.InsertOneResult, error)
-	FindByEmail(email string) (*entity.User, error)
+	Create(user entity.User, ctx context.Context) (*mongo.InsertOneResult, error)
+	FindByEmail(email string, ctx context.Context) (*entity.User, error)
 }
 
 func NewAuthRepository(client *mongo.Client) AuthRepo {
@@ -23,9 +23,9 @@ func NewAuthRepository(client *mongo.Client) AuthRepo {
 }
 
 // Create insert a new user in dadabase
-func (r *authrepo) Create(user entity.User) (*mongo.InsertOneResult, error) {
+func (r *authrepo) Create(user entity.User, ctx context.Context) (*mongo.InsertOneResult, error) {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("users")
-	insertResult, err := coll.InsertOne(context.TODO(), user)
+	insertResult, err := coll.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -33,12 +33,12 @@ func (r *authrepo) Create(user entity.User) (*mongo.InsertOneResult, error) {
 }
 
 // FindByEmail checks if the email exists in the database
-func (r *authrepo) FindByEmail(email string) (*entity.User, error) {
+func (r *authrepo) FindByEmail(email string, ctx context.Context) (*entity.User, error) {
 	var (
 		user entity.User
 	)
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("users")
-	err := coll.FindOne(context.TODO(), bson.M{"account.email": email}).Decode(&user)
+	err := coll.FindOne(ctx, bson.M{"account.email": email}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
