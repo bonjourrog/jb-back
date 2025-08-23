@@ -1,30 +1,25 @@
 package db
 
 import (
-	"log"
-	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"golang.org/x/net/context"
 )
 
-type MongoConnection interface {
-	Connection() *mongo.Client
-}
+func NewMongoClient(dbUri string) (*mongo.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-type mongoConnection struct{}
-
-func NewMongoConnection() MongoConnection {
-	return &mongoConnection{}
-}
-func (*mongoConnection) Connection() *mongo.Client {
-	uri := os.Getenv("MONGODB_URI")
-	if uri == "" {
-		log.Fatal("Error with the mongo uro environment")
-	}
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(options.Client().ApplyURI(dbUri))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return client
+
+	if err := client.Ping(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
