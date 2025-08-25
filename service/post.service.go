@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	_job "github.com/bonjourrog/jb/repository/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -75,7 +76,7 @@ func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx co
 }
 func (*jobService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
 	var (
-		application job.Application
+		application application.Application
 	)
 	application.ID = bson.NewObjectID()
 	UserID, err := bson.ObjectIDFromHex(user_id)
