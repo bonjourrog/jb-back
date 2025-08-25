@@ -53,9 +53,6 @@ func (*jobService) GetJobs(filter bson.M, page int, ctx context.Context) ([]job.
 	if err != nil {
 		return nil, 0, err
 	}
-	if len(jobs) == 0 {
-		return nil, 0, errors.New("no jobs found")
-	}
 	return jobs, total, nil
 }
 func (jobService) UpdateJob(job job.Post, ctx context.Context) error {
