@@ -15,6 +15,8 @@ type ApplicationRepository interface {
 	FindByUser(user_id bson.ObjectID, ctx context.Context) ([]application.Application, error)
 	UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error
 	GetByIds(job_ids []bson.ObjectID, ctx context.Context) ([]job.PostWithCompany, error)
+	ApplyToJob(application application.Application, ctx context.Context) error
+	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
 }
 
 type applicationRepo struct {
@@ -49,12 +51,12 @@ func (*applicationRepo) UpdateStatus(application_id bson.ObjectID, status string
 	return nil
 }
 
-func (r *applicationRepo) GetByIds(job_ids []bson.ObjectID, ctx context.Context) ([]job.PostWithCompany, error) {
+func (a *applicationRepo) GetByIds(job_ids []bson.ObjectID, ctx context.Context) ([]job.PostWithCompany, error) {
 	var (
 		results []job.PostWithCompany
 		err     error
 	)
-	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("jobs")
 	cursor, err := coll.Find(ctx, bson.M{"_id": bson.M{"$in": job_ids}})
 	// pipeline := mongo.Pipeline{
 	// {{"$match", bson.D{{"_id", bson.D{{"$in", job_ids}}}}}},
@@ -86,4 +88,29 @@ func (r *applicationRepo) GetByIds(job_ids []bson.ObjectID, ctx context.Context)
 		return nil, err
 	}
 	return results, nil
+}
+func (a *applicationRepo) ApplyToJob(application application.Application, ctx context.Context) error {
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	// Insert the application into the database
+	_, err := coll.InsertOne(ctx, application)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *applicationRepo) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error) {
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	count, err := coll.CountDocuments(ctx, bson.M{
+		"user_id": user_id,
+		"job_id":  job_id,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

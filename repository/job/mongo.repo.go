@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -16,8 +15,6 @@ type JobRepository interface {
 	GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
 	Update(job job.Post, ctx context.Context) error
 	Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
-	ApplyToJob(application application.Application, ctx context.Context) error
-	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
 }
 
 type jobRepository struct {
@@ -140,29 +137,4 @@ func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx 
 		return errors.New("no se pudo eliminar el empleo")
 	}
 	return nil
-}
-func (r *jobRepository) ApplyToJob(application application.Application, ctx context.Context) error {
-	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
-
-	// Insert the application into the database
-	_, err := coll.InsertOne(ctx, application)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *jobRepository) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error) {
-	coll := r.client.Database(os.Getenv("DATABASE")).Collection("applications")
-
-	count, err := coll.CountDocuments(ctx, bson.M{
-		"user_id": user_id,
-		"job_id":  job_id,
-	})
-	if err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
 }

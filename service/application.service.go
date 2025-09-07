@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
@@ -14,6 +16,7 @@ type ApplicationService interface {
 	// Create(application application, ctx context.Context) error
 	GetUserApplications(user_id bson.ObjectID, ctx context.Context) ([]application.ApplicationWithCompany, error)
 	UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error
+	ApplyToJob(user_id string, job_id string, ctx context.Context) error
 }
 
 type applicationService struct {
@@ -66,6 +69,40 @@ func (a *applicationService) GetUserApplications(user_id bson.ObjectID, ctx cont
 	}
 	return applications, nil
 }
-func (*applicationService) UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error {
+func (a *applicationService) UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error {
+	return nil
+}
+func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
+	var (
+		application application.Application
+	)
+	application.ID = bson.NewObjectID()
+	UserID, err := bson.ObjectIDFromHex(user_id)
+	if err != nil {
+		return err
+	}
+	application.UserID = UserID
+	JobID, err := bson.ObjectIDFromHex(job_id)
+	if err != nil {
+		return err
+	}
+	application.JobID = JobID
+	if user_id == "" || job_id == "" {
+		return errors.New("user id or job id is empty")
+	}
+
+	alreadyApplied, err := a.appRepo.IsUserAlreadyApplied(UserID, JobID, ctx)
+	if err != nil {
+		return err
+	}
+	if alreadyApplied {
+		return errors.New("user has already applied to this job")
+	}
+
+	application.AppliedAt = time.Now()
+
+	if err := a.appRepo.ApplyToJob(application, ctx); err != nil {
+		return err
+	}
 	return nil
 }

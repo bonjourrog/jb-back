@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	_job "github.com/bonjourrog/jb/repository/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -17,7 +16,6 @@ type JobService interface {
 	GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
 	UpdateJob(job job.Post, ctx context.Context) error
 	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
-	ApplyToJob(user_id string, job_id string, ctx context.Context) error
 }
 type jobService struct{}
 
@@ -73,38 +71,4 @@ func (jobService) UpdateJob(job job.Post, ctx context.Context) error {
 }
 func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error {
 	return _jobRepo.Delete(job_id, user_id, ctx)
-}
-func (*jobService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
-	var (
-		application application.Application
-	)
-	application.ID = bson.NewObjectID()
-	UserID, err := bson.ObjectIDFromHex(user_id)
-	if err != nil {
-		return err
-	}
-	application.UserID = UserID
-	JobID, err := bson.ObjectIDFromHex(job_id)
-	if err != nil {
-		return err
-	}
-	application.JobID = JobID
-	if user_id == "" || job_id == "" {
-		return errors.New("user id or job id is empty")
-	}
-
-	alreadyApplied, err := _jobRepo.IsUserAlreadyApplied(UserID, JobID, ctx)
-	if err != nil {
-		return err
-	}
-	if alreadyApplied {
-		return errors.New("user has already applied to this job")
-	}
-
-	application.AppliedAt = time.Now()
-
-	if err := _jobRepo.ApplyToJob(application, ctx); err != nil {
-		return err
-	}
-	return nil
 }
