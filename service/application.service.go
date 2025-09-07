@@ -21,7 +21,7 @@ type applicationService struct {
 	jobRepo jobRepo.JobRepository
 }
 
-func NewApplicationService(appRepo repo.ApplicationRepository, jobRepo jobRepo.JobRepository) ApplicationService {
+func NewApplicationService(appRepo repo.ApplicationRepository) ApplicationService {
 	return &applicationService{
 		appRepo: appRepo,
 	}
