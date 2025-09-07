@@ -59,6 +59,17 @@ func OnlyCompanyAccess() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+func OnlyUserAccess() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		role, exist := ctx.Get("role")
+		if !exist || role != "user" {
+			ctx.AbortWithStatusJSON(403, gin.H{"error": "user role required"})
+			return
+		}
+		ctx.Next()
+	}
+}
+
 func CorsConfig() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
