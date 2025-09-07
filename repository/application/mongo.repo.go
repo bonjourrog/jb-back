@@ -57,29 +57,27 @@ func (a *applicationRepo) GetByIds(job_ids []bson.ObjectID, ctx context.Context)
 		err     error
 	)
 	coll := a.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	cursor, err := coll.Find(ctx, bson.M{"_id": bson.M{"$in": job_ids}})
-	// pipeline := mongo.Pipeline{
-	// {{"$match", bson.D{{"_id", bson.D{{"$in", job_ids}}}}}},
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{{"_id", bson.D{{"$in", job_ids}}}}}},
 
-	// {{
-	// 	"$lookup", bson.M{
-	// 		"from":         "users",
-	// 		"localField":   "company_id",
-	// 		"foreignField": "_id",
-	// 		"as":           "company",
-	// 	}}},
-	// {{"$unwind", bson.M{
-	// 	"path":                       "$company",
-	// 	"preserveNullAndEmptyArrays": true,
-	// }}},
-	// {"$addFields", bson.M{
-	// 	"company_name": "$company.company.name",
-	// 	"company_logo": "$company.company.logo",
-	// }},
+		{{
+			"$lookup", bson.M{
+				"from":         "users",
+				"localField":   "company_id",
+				"foreignField": "_id",
+				"as":           "company",
+			}}},
+		{{"$unwind", bson.M{
+			"path":                       "$company",
+			"preserveNullAndEmptyArrays": true,
+		}}},
+		{{"$addFields", bson.M{
+			"company_name": "$company.company.name",
+			"company_logo": "$company.company.logo",
+		}},
+		}}
 
-	// }
-
-	// cursor, err := coll.Aggregate(ctx, pipeline)
+	cursor, err := coll.Aggregate(ctx, pipeline)
 
 	if err != nil {
 		return nil, err
@@ -100,7 +98,6 @@ func (a *applicationRepo) ApplyToJob(application application.Application, ctx co
 
 	return nil
 }
-
 func (a *applicationRepo) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error) {
 	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
