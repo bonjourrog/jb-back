@@ -74,22 +74,24 @@ func (a *applicationService) UpdateStatus(application_id bson.ObjectID, status s
 }
 func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
 	var (
-		application application.Application
+		app application.Application
 	)
-	application.ID = bson.NewObjectID()
+	app.ID = bson.NewObjectID()
 	UserID, err := bson.ObjectIDFromHex(user_id)
 	if err != nil {
 		return err
 	}
-	application.UserID = UserID
+	app.UserID = UserID
 	JobID, err := bson.ObjectIDFromHex(job_id)
 	if err != nil {
 		return err
 	}
-	application.JobID = JobID
+	app.JobID = JobID
 	if user_id == "" || job_id == "" {
 		return errors.New("user id or job id is empty")
 	}
+
+	app.Status = application.StatusReceived
 
 	alreadyApplied, err := a.appRepo.IsUserAlreadyApplied(UserID, JobID, ctx)
 	if err != nil {
@@ -99,9 +101,9 @@ func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx conte
 		return errors.New("user has already applied to this job")
 	}
 
-	application.AppliedAt = time.Now()
+	app.AppliedAt = time.Now()
 
-	if err := a.appRepo.ApplyToJob(application, ctx); err != nil {
+	if err := a.appRepo.ApplyToJob(app, ctx); err != nil {
 		return err
 	}
 	return nil
