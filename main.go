@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/bonjourrog/jb/config"
 	"github.com/bonjourrog/jb/controller"
 	"github.com/bonjourrog/jb/db"
 	"github.com/bonjourrog/jb/middleware"
@@ -13,7 +14,6 @@ import (
 	"github.com/bonjourrog/jb/repository/job"
 	"github.com/bonjourrog/jb/routes"
 	"github.com/bonjourrog/jb/service"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -21,9 +21,7 @@ func main() {
 	httpRouter.Use(middleware.CorsConfig())
 
 	// Load env variables
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading env file")
-	}
+	config.Load()
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
 		log.Fatal("MONGODB_URI not found")
