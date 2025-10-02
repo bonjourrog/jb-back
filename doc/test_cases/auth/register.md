@@ -1,0 +1,55 @@
+## Test case: User registration
+- **Test case ID:** TCP-REG-001
+- **Title:** Verify the registration of a new user.
+- **Related requirements:** REQ-AUTH-001, REQ-AUTH-001a
+- **Related user stories:** US-AUTH-001
+- **Preconditions**
+    - The user is not logged in.
+    - The email to be used is not already registered in the system.
+    - The user is on the login page.
+- **Process steps**
+    - Click on the "click aquí" blue link, on the login page.
+    - Fill out the registration form with valid data for all fields:
+        - Name: "John"
+        - Last name: "Doe"
+        - Email: "john.doe@email.com"
+        - Phone: "1234567890"
+        - Password: "Password123!"
+        - Confirm Password: "Password123!"
+    - Click on "Registrase" button.
+- **Expected results**
+    - The System redirects to the login page.
+    - A success message is displayed.
+- **Status:** passed
+- **Link:**
+
+## Test case: Email already registered
+- **Test case ID:** TCP-REG-002
+- **Title:** Verify the system prevents the account creation for registrated emails
+- **Related requirements:** REQ-AUTH-001, REQ-AUTH-001a
+- **Related use stories:** US-AUTH-001
+- **Preconditions**
+    - The user is already in the register page
+    - The email "registered.user@email.com" already exists in the system.
+- **Process steps**
+    - Fill in all the mandatory fields
+    - In the "Email" field, type "registered.user@email.com".
+    - Click on the "Register" button.
+- **Expected results**
+    - The system prevents the registration from being completed.
+    - An error message is displayed, such as: "This email is already registered. Please use a different email or log in."
+
+## Test case: Validate mandatory field
+- **Test case ID:** TCP-REG-003
+- **Title:** Verify the system validates the mandatory fields before submiting the user data
+- **Related requirements:** REQ-AUTH-001, REQ-AUTH-001a
+- **Related use stories:** US-AUTH-001
+- **Preconditions**
+    - The user is already in register page
+- **Process steps**
+    - Leave one of the mandatory fields empty (e.g., "Email").
+    - Fill in all the remaining mandatory fields
+    - Click on "Registrarse" button
+- **Expected results**
+    - The system doesn't not allow the form submitting
+    - An inline error message is displayed next to the empty "Email" field, such as: "This field is required."
