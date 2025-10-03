@@ -36,7 +36,7 @@ func (r *jobRepository) Create(job job.Post, ctx context.Context) error {
 func (r *jobRepository) GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
 	var (
 		results     []job.PostWithCompany
-		limit       = 10
+		limit       = 12
 		skip        = (page - 1) * limit
 		lookupStage bson.D
 	)
