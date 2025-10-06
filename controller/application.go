@@ -13,6 +13,7 @@ type ApplicationController interface {
 	GetUserApplications(c *gin.Context)
 	// UpdateStatus(c *gin.Context)
 	ApplyToJob(c *gin.Context)
+	DeleteApplication(c *gin.Context)
 }
 type applicationController struct {
 	appservice service.ApplicationService
@@ -81,5 +82,46 @@ func (a *applicationController) ApplyToJob(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Application submitted successfully",
+	})
+}
+func (a *applicationController) DeleteApplication(c *gin.Context) {
+	ctx := c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if userId == "" || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Invalid user ID",
+		})
+		return
+	}
+	user_id, err := bson.ObjectIDFromHex(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid user ID format",
+		})
+		return
+	}
+	appId := c.Param("id")
+	if appId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "no id provided",
+		})
+		return
+	}
+	application_id, err := bson.ObjectIDFromHex(appId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid application ID format",
+		})
+		return
+	}
+	err = a.appservice.DeleteApplication(application_id, user_id, ctx)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Application deleted successfully",
 	})
 }
