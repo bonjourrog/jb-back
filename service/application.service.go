@@ -3,12 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	repo "github.com/bonjourrog/jb/repository/application"
-	jobRepo "github.com/bonjourrog/jb/repository/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -17,11 +17,11 @@ type ApplicationService interface {
 	GetUserApplications(user_id bson.ObjectID, ctx context.Context) ([]application.ApplicationWithCompany, error)
 	UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error
 	ApplyToJob(user_id string, job_id string, ctx context.Context) error
+	DeleteApplication(application_id bson.ObjectID, userId bson.ObjectID, ctx context.Context) error
 }
 
 type applicationService struct {
 	appRepo repo.ApplicationRepository
-	jobRepo jobRepo.JobRepository
 }
 
 func NewApplicationService(appRepo repo.ApplicationRepository) ApplicationService {
@@ -107,4 +107,14 @@ func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx conte
 		return err
 	}
 	return nil
+}
+func (a *applicationService) DeleteApplication(application_id bson.ObjectID, userId bson.ObjectID, ctx context.Context) error {
+	app, err := a.appRepo.GetById(application_id, ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get application: %w", err)
+	}
+	if app.UserID != userId {
+		return errors.New("you are not authorized to delete this application")
+	}
+	return a.appRepo.DeleteById(application_id, userId, ctx)
 }
