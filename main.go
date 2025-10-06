@@ -62,5 +62,6 @@ func main() {
 	// application routes
 	httpRouter.POST("/api/application/:id/apply", applicationController.ApplyToJob, middleware.ValidateToken())
 	httpRouter.GET("/api/application/user", applicationController.GetUserApplications, middleware.ValidateToken(), middleware.OnlyUserAccess())
+	httpRouter.DELETE("/api/application/:id", applicationController.DeleteApplication, middleware.ValidateToken(), middleware.OnlyUserAccess())
 	httpRouter.Serve(os.Getenv("PORT"))
 }
