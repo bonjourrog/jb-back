@@ -2,8 +2,11 @@ package application
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 
+	"github.com/bonjourrog/jb/entity"
 	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,8 +18,10 @@ type ApplicationRepository interface {
 	FindByUser(user_id bson.ObjectID, ctx context.Context) ([]application.Application, error)
 	UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error
 	GetByIds(job_ids []bson.ObjectID, ctx context.Context) ([]job.PostWithCompany, error)
+	GetById(applicationId bson.ObjectID, ctx context.Context) (*application.Application, error)
 	ApplyToJob(application application.Application, ctx context.Context) error
 	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
+	DeleteById(application_id bson.ObjectID, userId bson.ObjectID, ctx context.Context) error
 }
 
 type applicationRepo struct {
@@ -87,6 +92,19 @@ func (a *applicationRepo) GetByIds(job_ids []bson.ObjectID, ctx context.Context)
 	}
 	return results, nil
 }
+func (a *applicationRepo) GetById(applicationId bson.ObjectID, ctx context.Context) (*application.Application, error) {
+	coll := a.client.Database((os.Getenv("DATABASE"))).Collection("applications")
+
+	var app application.Application
+	err := coll.FindOne(ctx, bson.M{"_id": applicationId}).Decode(&app)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, entity.ErrApplicationNotFound
+		}
+		return nil, err
+	}
+	return &app, nil
+}
 func (a *applicationRepo) ApplyToJob(application application.Application, ctx context.Context) error {
 	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
 
@@ -110,4 +128,17 @@ func (a *applicationRepo) IsUserAlreadyApplied(user_id bson.ObjectID, job_id bso
 	}
 
 	return count > 0, nil
+}
+func (a *applicationRepo) DeleteById(application_id bson.ObjectID, userId bson.ObjectID, ctx context.Context) error {
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	result, err := coll.DeleteOne(ctx, bson.M{"_id": application_id, "user_id": userId})
+	if err != nil {
+		return fmt.Errorf("failed to delete application: %w", err)
+	}
+	if result.DeletedCount == 0 {
+		return entity.ErrApplicationNotFound
+	}
+
+	return nil
 }
