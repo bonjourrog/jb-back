@@ -18,6 +18,7 @@ type ApplicationRepository interface {
 	FindByUser(user_id bson.ObjectID, ctx context.Context) ([]application.Application, error)
 	UpdateStatus(application_id bson.ObjectID, status string, ctx context.Context) error
 	GetByIds(job_ids []bson.ObjectID, ctx context.Context) ([]job.PostWithCompany, error)
+	FindByField(field string, value interface{}, ctx context.Context) (*[]application.Application, error)
 	GetById(applicationId bson.ObjectID, ctx context.Context) (*application.Application, error)
 	ApplyToJob(application application.Application, ctx context.Context) error
 	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
@@ -141,4 +142,18 @@ func (a *applicationRepo) DeleteById(application_id bson.ObjectID, userId bson.O
 	}
 
 	return nil
+}
+func (a *applicationRepo) FindByField(field string, value interface{}, ctx context.Context) (*[]application.Application, error) {
+	var results []application.Application
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
+
+	cursor, err := coll.Find(ctx, bson.M{field: value})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return &results, nil
 }
