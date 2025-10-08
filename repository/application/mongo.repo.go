@@ -23,6 +23,7 @@ type ApplicationRepository interface {
 	ApplyToJob(application application.Application, ctx context.Context) error
 	IsUserAlreadyApplied(user_id bson.ObjectID, job_id bson.ObjectID, ctx context.Context) (bool, error)
 	DeleteById(application_id bson.ObjectID, userId bson.ObjectID, ctx context.Context) error
+	DeleteManybyIds(application_ids []bson.ObjectID, ctx context.Context) error
 }
 
 type applicationRepo struct {
@@ -156,4 +157,15 @@ func (a *applicationRepo) FindByField(field string, value interface{}, ctx conte
 		return nil, err
 	}
 	return &results, nil
+}
+func (a *applicationRepo) DeleteManybyIds(application_ids []bson.ObjectID, ctx context.Context) error {
+	coll := a.client.Database(os.Getenv("DATABASE")).Collection("applications")
+	results, err := coll.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": application_ids}})
+	if err != nil {
+		return err
+	}
+	if results.DeletedCount == 0 {
+		return entity.ErrApplicationNotFound
+	}
+	return nil
 }
