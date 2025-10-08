@@ -14,7 +14,7 @@ type JobRepository interface {
 	Create(job job.Post, ctx context.Context) error
 	GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
 	Update(job job.Post, ctx context.Context) error
-	Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
+	Delete(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error
 }
 
 type jobRepository struct {
@@ -176,9 +176,9 @@ func (r *jobRepository) Update(job job.Post, ctx context.Context) error {
 	}
 	return nil
 }
-func (r *jobRepository) Delete(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error {
+func (r *jobRepository) Delete(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	res, err := coll.DeleteOne(ctx, bson.M{"_id": job_id, "company_id": user_id})
+	res, err := coll.DeleteOne(ctx, bson.M{"_id": job_id, "company_id": company_id})
 	if err != nil {
 		return err
 	}
