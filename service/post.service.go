@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bonjourrog/jb/entity/job"
+	"github.com/bonjourrog/jb/repository/application"
 	_job "github.com/bonjourrog/jb/repository/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -17,17 +18,20 @@ type JobService interface {
 	UpdateJob(job job.Post, ctx context.Context) error
 	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
 }
-type jobService struct{}
-
-var (
-	_jobRepo _job.JobRepository
-)
-
-func NewPostService(jobRepo _job.JobRepository) JobService {
-	_jobRepo = jobRepo
-	return &jobService{}
+type jobService struct {
+	jobRepo _job.JobRepository
+	appRepo application.ApplicationRepository
 }
-func (*jobService) NewJob(job job.Post, ctx context.Context) error {
+
+var ()
+
+func NewPostService(jobRepo _job.JobRepository, appRepo application.ApplicationRepository) JobService {
+	return &jobService{
+		jobRepo: jobRepo,
+		appRepo: appRepo,
+	}
+}
+func (j *jobService) NewJob(job job.Post, ctx context.Context) error {
 
 	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
@@ -42,19 +46,19 @@ func (*jobService) NewJob(job job.Post, ctx context.Context) error {
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = time.Now()
 
-	if err := _jobRepo.Create(job, ctx); err != nil {
+	if err := j.jobRepo.Create(job, ctx); err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobService) GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
-	jobs, total, err := _jobRepo.GetAll(filter, page, ctx)
+func (j *jobService) GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
+	jobs, total, err := j.jobRepo.GetAll(filter, page, ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	return jobs, total, nil
 }
-func (jobService) UpdateJob(job job.Post, ctx context.Context) error {
+func (j *jobService) UpdateJob(job job.Post, ctx context.Context) error {
 	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
 	job.Description = strings.TrimSpace(job.Description)
@@ -63,12 +67,41 @@ func (jobService) UpdateJob(job job.Post, ctx context.Context) error {
 		return errors.New("some required fields are empty")
 	}
 	job.UpdatedAt = time.Now()
-	err := _jobRepo.Update(job, ctx)
+	err := j.jobRepo.Update(job, ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (*jobService) DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error {
-	return _jobRepo.Delete(job_id, user_id, ctx)
+func (j *jobService) DeleteJob(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error {
+	var (
+		appIds []bson.ObjectID
+		err    error
+	)
+	apps, err := j.appRepo.FindByField("job_id", job_id, ctx)
+	if err != nil {
+		return err
+	}
+	// currently, company_id field in application is not set when user applies to a job
+	// so we cannot verify if the application belongs to the company deleting the job
+	// once we set the company_id field in application, we can uncomment the code below
+	// for _, app := range *apps {
+	//     if app.CompanyID != company_id {
+	//         return errors.New("unauthorized: application does not belong to your company")
+	//     }
+	// }
+	if apps != nil && len(*apps) > 0 {
+		for _, app := range *apps {
+			appIds = append(appIds, app.ID)
+		}
+	}
+
+	if len(appIds) > 0 {
+		err = j.appRepo.DeleteManybyIds(appIds, ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return j.jobRepo.Delete(job_id, company_id, ctx)
 }

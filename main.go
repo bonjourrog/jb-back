@@ -43,15 +43,15 @@ func main() {
 		authService    service.AuthService       = service.NewAuthService(authRepo)
 		authController controller.AuthController = controller.NewAuthController(authService)
 
-		// Job
-		jobRepo       job.JobRepository        = job.NewJobRepository(mongoClient)
-		jobService    service.JobService       = service.NewPostService(jobRepo)
-		jobController controller.JobController = controller.NewJobController(jobService)
-
 		// Application
 		applicationRepo       application.ApplicationRepository = application.NewApplicationRepository(mongoClient)
 		applicationService    service.ApplicationService        = service.NewApplicationService(applicationRepo)
 		applicationController controller.ApplicationController  = controller.NewApplicationController(applicationService)
+
+		// Job
+		jobRepo       job.JobRepository        = job.NewJobRepository(mongoClient)
+		jobService    service.JobService       = service.NewPostService(jobRepo, applicationRepo)
+		jobController controller.JobController = controller.NewJobController(jobService)
 	)
 	httpRouter.POST("/api/auth/signup", authController.Signup)
 	httpRouter.POST("/api/auth/signin", authController.Signin)
