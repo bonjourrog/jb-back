@@ -15,6 +15,7 @@ type JobRepository interface {
 	GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
 	Update(job job.Post, ctx context.Context) error
 	Delete(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error
+	GetById(job_id bson.ObjectID, ctx context.Context) (*job.Post, error)
 }
 
 type jobRepository struct {
@@ -186,4 +187,16 @@ func (r *jobRepository) Delete(job_id bson.ObjectID, company_id bson.ObjectID, c
 		return errors.New("no se pudo eliminar el empleo")
 	}
 	return nil
+}
+func (r *jobRepository) GetById(job_id bson.ObjectID, ctx context.Context) (*job.Post, error) {
+	coll := r.client.Database((os.Getenv("DATABASE"))).Collection("jobs")
+	var result job.Post
+	err := coll.FindOne(ctx, bson.M{"_id": job_id}).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &result, nil
 }
