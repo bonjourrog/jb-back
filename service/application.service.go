@@ -9,6 +9,7 @@ import (
 	"github.com/bonjourrog/jb/entity/application"
 	"github.com/bonjourrog/jb/entity/job"
 	repo "github.com/bonjourrog/jb/repository/application"
+	job_repo "github.com/bonjourrog/jb/repository/job"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -22,11 +23,13 @@ type ApplicationService interface {
 
 type applicationService struct {
 	appRepo repo.ApplicationRepository
+	jobRepo job_repo.JobRepository
 }
 
-func NewApplicationService(appRepo repo.ApplicationRepository) ApplicationService {
+func NewApplicationService(appRepo repo.ApplicationRepository, jobRepo job_repo.JobRepository) ApplicationService {
 	return &applicationService{
 		appRepo: appRepo,
+		jobRepo: jobRepo,
 	}
 }
 
@@ -75,6 +78,7 @@ func (a *applicationService) UpdateStatus(application_id bson.ObjectID, status s
 func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx context.Context) error {
 	var (
 		app application.Application
+		job *job.Post
 	)
 	app.ID = bson.NewObjectID()
 	UserID, err := bson.ObjectIDFromHex(user_id)
@@ -102,6 +106,16 @@ func (a *applicationService) ApplyToJob(user_id string, job_id string, ctx conte
 	}
 
 	app.AppliedAt = time.Now()
+
+	job, err = a.jobRepo.GetById(JobID, ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get job: %w", err)
+	}
+	if job == nil {
+		return errors.New("job not found")
+	}
+
+	app.CompanyID = job.CompanyID
 
 	if err := a.appRepo.ApplyToJob(app, ctx); err != nil {
 		return err

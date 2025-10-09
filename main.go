@@ -37,6 +37,9 @@ func main() {
 	}()
 
 	var (
+		// Repositories
+		applicationRepo application.ApplicationRepository = application.NewApplicationRepository(mongoClient)
+		jobRepo         job.JobRepository                 = job.NewJobRepository(mongoClient)
 
 		// Auth
 		authRepo       auth.AuthRepo             = auth.NewAuthRepository(mongoClient)
@@ -44,12 +47,10 @@ func main() {
 		authController controller.AuthController = controller.NewAuthController(authService)
 
 		// Application
-		applicationRepo       application.ApplicationRepository = application.NewApplicationRepository(mongoClient)
-		applicationService    service.ApplicationService        = service.NewApplicationService(applicationRepo)
-		applicationController controller.ApplicationController  = controller.NewApplicationController(applicationService)
+		applicationService    service.ApplicationService       = service.NewApplicationService(applicationRepo, jobRepo)
+		applicationController controller.ApplicationController = controller.NewApplicationController(applicationService)
 
 		// Job
-		jobRepo       job.JobRepository        = job.NewJobRepository(mongoClient)
 		jobService    service.JobService       = service.NewPostService(jobRepo, applicationRepo)
 		jobController controller.JobController = controller.NewJobController(jobService)
 	)
