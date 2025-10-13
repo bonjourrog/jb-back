@@ -26,7 +26,8 @@ type Post struct {
 }
 
 type PostWithCompany struct {
-	Post        `bson:",inline"`
-	CompanyName string `bson:"company_name" json:"company_name"`
-	CompanyLogo string `bson:"company_logo" json:"company_logo"`
+	Post         `bson:",inline"`
+	CompanyName  string `bson:"company_name" json:"company_name"`
+	CompanyLogo  string `bson:"company_logo" json:"company_logo"`
+	CompanyPhone string `bson:"company_phone" json:"company_phone"`
 }

@@ -151,8 +151,9 @@ func (r *jobRepository) GetAll(filter bson.M, page int, ctx context.Context) ([]
 			"preserveNullAndEmptyArrays": true,
 		}}},
 		bson.D{{"$addFields", bson.M{
-			"company_name": "$company.company.name",
-			"company_logo": "$company.company.logo",
+			"company_name":  "$company.company.name",
+			"company_logo":  "$company.company.logo",
+			"company_phone": "$company.account.phone",
 		}}},
 	)
 
