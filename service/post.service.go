@@ -13,7 +13,7 @@ import (
 )
 
 type JobService interface {
-	NewJob(job job.Post, ctx context.Context) error
+	NewJob(job job.Post, ctx context.Context) (*job.Post, error)
 	GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
 	UpdateJob(job job.Post, ctx context.Context) error
 	DeleteJob(job_id bson.ObjectID, user_id bson.ObjectID, ctx context.Context) error
@@ -31,14 +31,14 @@ func NewPostService(jobRepo _job.JobRepository, appRepo application.ApplicationR
 		appRepo: appRepo,
 	}
 }
-func (j *jobService) NewJob(job job.Post, ctx context.Context) error {
+func (j *jobService) NewJob(job job.Post, ctx context.Context) (*job.Post, error) {
 
 	job.Title = strings.TrimSpace(strings.ToLower(job.Title))
 	job.ShortDescription = strings.TrimSpace(job.ShortDescription)
 	job.Description = strings.TrimSpace(job.Description)
 
 	if job.Title == "" || job.ShortDescription == "" || job.Description == "" || job.CompanyID == bson.NilObjectID || job.ContractType == "" || job.Industry == "" || job.Schedule == "" {
-		return errors.New("some required fields are empty")
+		return nil, errors.New("some required fields are empty")
 	}
 
 	job.ID = bson.NewObjectID()
@@ -46,10 +46,12 @@ func (j *jobService) NewJob(job job.Post, ctx context.Context) error {
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = time.Now()
 
-	if err := j.jobRepo.Create(job, ctx); err != nil {
-		return err
+	insertedID, err := j.jobRepo.Create(job, ctx)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	job.ID = *insertedID
+	return &job, nil
 }
 func (j *jobService) GetJobs(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
 	jobs, total, err := j.jobRepo.GetAll(filter, page, ctx)

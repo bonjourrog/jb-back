@@ -11,8 +11,8 @@ import (
 )
 
 type JobRepository interface {
-	Create(job job.Post, ctx context.Context) error
 	GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error)
+	Create(job job.Post, ctx context.Context) (*bson.ObjectID, error)
 	Update(job job.Post, ctx context.Context) error
 	Delete(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error
 	GetById(job_id bson.ObjectID, ctx context.Context) (*job.Post, error)
@@ -26,13 +26,14 @@ func NewJobRepository(client *mongo.Client) JobRepository {
 	return &jobRepository{client: client}
 }
 
-func (r *jobRepository) Create(job job.Post, ctx context.Context) error {
+func (r *jobRepository) Create(job job.Post, ctx context.Context) (*bson.ObjectID, error) {
 	coll := r.client.Database(os.Getenv("DATABASE")).Collection("jobs")
-	_, err := coll.InsertOne(ctx, job)
+	result, err := coll.InsertOne(ctx, job)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	insertedID := result.InsertedID.(bson.ObjectID)
+	return &insertedID, nil
 }
 func (r *jobRepository) GetAll(filter bson.M, page int, ctx context.Context) ([]job.PostWithCompany, int64, error) {
 	var (

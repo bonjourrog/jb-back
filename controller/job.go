@@ -57,7 +57,8 @@ func (*jobController) NewJob(c *gin.Context) {
 
 	job.CompanyID = user_id
 
-	if err := _jobService.NewJob(job, cxt); err != nil {
+	jobInserted, err := _jobService.NewJob(job, cxt)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
@@ -65,6 +66,7 @@ func (*jobController) NewJob(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "job created succesfully",
+		"data":    jobInserted,
 	})
 
 }
