@@ -81,6 +81,8 @@ func (r *jobRepository) GetAll(filter bson.M, page int, ctx context.Context) ([]
 		basePipeline = append(basePipeline, bson.D{{"$match", filter}})
 	}
 
+	basePipeline = append(basePipeline, bson.D{{"$sort", bson.D{{"createdAt", -1}}}})
+
 	countPipeline := append(basePipeline, bson.D{{"$count", "total"}})
 
 	countCursor, err := coll.Aggregate(ctx, countPipeline)
