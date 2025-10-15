@@ -43,6 +43,7 @@ func (j *jobService) NewJob(job job.Post, ctx context.Context) (*job.Post, error
 
 	job.ID = bson.NewObjectID()
 	job.IsFormalJob = true
+	job.Published = true
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = time.Now()
 
