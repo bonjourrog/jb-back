@@ -89,6 +89,7 @@ func (*jobController) GetJobs(c *gin.Context) {
 		filter["user_id"] = userId
 	}
 
+	filter["published"] = true
 	if company_id := query.Get("company_id"); company_id != "" {
 		companyId, err := bson.ObjectIDFromHex(company_id)
 		if err != nil {
@@ -98,6 +99,7 @@ func (*jobController) GetJobs(c *gin.Context) {
 			return
 		}
 		filter["company_id"] = companyId
+		delete(filter, "published")
 	}
 	if search := query.Get("search"); search != "" {
 		orFilter := bson.A{
