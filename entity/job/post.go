@@ -21,6 +21,7 @@ type Post struct {
 	IsFormalJob      bool            `json:"is_formal_job" bson:"is_formal_job"`
 	Published        bool            `json:"published" bson:"published"`
 	CompanyID        bson.ObjectID   `json:"company_id,omitempty" bson:"company_id,omitempty"`
+	Slug             string          `json:"slug" bson:"slug"`
 	CreatedAt        time.Time       `json:"created_at" bson:"created_at"`
 	UpdatedAt        time.Time       `json:"updated_at" bson:"updated_at"`
 }
