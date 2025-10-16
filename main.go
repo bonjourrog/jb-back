@@ -13,6 +13,7 @@ import (
 	"github.com/bonjourrog/jb/repository/auth"
 	"github.com/bonjourrog/jb/repository/job"
 	"github.com/bonjourrog/jb/repository/prospect"
+	"github.com/bonjourrog/jb/repository/user"
 	"github.com/bonjourrog/jb/routes"
 	"github.com/bonjourrog/jb/service"
 )
@@ -42,6 +43,7 @@ func main() {
 		applicationRepo application.ApplicationRepository = application.NewApplicationRepository(mongoClient)
 		jobRepo         job.JobRepository                 = job.NewJobRepository(mongoClient)
 		prospectRepo    prospect.ProspectRepo             = prospect.NewProspectRepo(mongoClient)
+		userRepo        user.UserRepo                     = user.NewUserRepo(mongoClient)
 
 		// Auth
 		authRepo       auth.AuthRepo             = auth.NewAuthRepository(mongoClient)
@@ -57,7 +59,7 @@ func main() {
 		applicationController controller.ApplicationController = controller.NewApplicationController(applicationService)
 
 		// Job
-		jobService    service.JobService       = service.NewPostService(jobRepo, applicationRepo)
+		jobService    service.JobService       = service.NewPostService(jobRepo, applicationRepo, userRepo)
 		jobController controller.JobController = controller.NewJobController(jobService)
 	)
 	httpRouter.POST("/api/auth/signup", authController.Signup)
@@ -65,6 +67,7 @@ func main() {
 	httpRouter.PUT("/api/job", jobController.UpdateJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.POST("/api/job", jobController.NewJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	httpRouter.GET("/api/job", jobController.GetJobs)
+	httpRouter.GET("/api/job/:company_name/:slug", jobController.GetJob)
 	httpRouter.DELETE("/api/job/:id", jobController.DeleteJob, middleware.ValidateToken(), middleware.OnlyCompanyAccess())
 	// application routes
 	httpRouter.POST("/api/application/:id/apply", applicationController.ApplyToJob, middleware.ValidateToken())
