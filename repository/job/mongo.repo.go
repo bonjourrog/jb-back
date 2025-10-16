@@ -16,6 +16,7 @@ type JobRepository interface {
 	Update(job job.Post, ctx context.Context) error
 	Delete(job_id bson.ObjectID, company_id bson.ObjectID, ctx context.Context) error
 	GetById(job_id bson.ObjectID, ctx context.Context) (*job.Post, error)
+	FindByField(field string, value interface{}, ctx context.Context) (*job.Post, error)
 }
 
 type jobRepository struct {
@@ -203,4 +204,14 @@ func (r *jobRepository) GetById(job_id bson.ObjectID, ctx context.Context) (*job
 		return nil, err
 	}
 	return &result, nil
+}
+func (r *jobRepository) FindByField(field string, value interface{}, ctx context.Context) (*job.Post, error) {
+	var (
+		job job.Post
+	)
+	coll := r.client.Database((os.Getenv("DATABASE"))).Collection("jobs")
+	if err := coll.FindOne(ctx, bson.M{field: value}).Decode(&job); err != nil {
+		return nil, err
+	}
+	return &job, nil
 }
