@@ -52,7 +52,7 @@ func (j *jobService) NewJob(job job.Post, ctx context.Context) (*job.Post, error
 	job.Published = true
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = time.Now()
-	job.Slug = bson.NewObjectID().Hex() + "-" + util.Slugify(job.Title)
+	job.Slug = util.Slugify(job.Title) + "-" + bson.NewObjectID().Hex()
 
 	insertedID, err := j.jobRepo.Create(job, ctx)
 	if err != nil {
