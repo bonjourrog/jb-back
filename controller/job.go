@@ -17,6 +17,7 @@ type JobController interface {
 	GetJobs(c *gin.Context)
 	UpdateJob(c *gin.Context)
 	DeleteJob(c *gin.Context)
+	GetJob(c *gin.Context)
 }
 
 type jobController struct{}
@@ -210,5 +211,41 @@ func (*jobController) DeleteJob(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Job deleted successfully",
+	})
+}
+func (*jobController) GetJob(c *gin.Context) {
+	var (
+		companyName, slug string
+		ctx               = c.Request.Context()
+		job               *job.PostWithCompany
+	)
+	if companyName = c.Param("company_name"); companyName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": "company name is missing",
+		})
+		return
+	}
+	if slug = c.Param("slug"); slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"data":    nil,
+			"message": "slug is missing",
+		})
+		return
+	}
+	job, err := _jobService.GetBySlug(companyName, slug, ctx)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"data":    nil,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"error":   true,
+		"data":    job,
+		"message": "succesful request",
 	})
 }
