@@ -20,3 +20,4 @@ go.work
 
 .env
 .vscode
+.DS_Store
